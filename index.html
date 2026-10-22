@@ -48,7 +48,7 @@
                             <i class="fa-solid fa-user"></i> Usuario
                         </label>
                         
-                        <input class="frm-inp" id="log-usr" placeholder="Ej. Miusuario123" required type="text"/>
+                        <input class="frm-inp" id="log-usr" placeholder="Ej. admin" required type="text"/>
                     </div>
 
                     <div class="frm-grp">
@@ -58,7 +58,7 @@
                         
                         <!-- Contenedor relativo para posicionar el botón flotante dentro del input -->
                         <div style="position: relative;">
-                            <input class="frm-inp" id="log-pwd" placeholder="Ej. Micontraseña123" required type="password"/>
+                            <input class="frm-inp" id="log-pwd" placeholder="Ej. admin" required type="password"/>
                             <button type="button" id="btn-toggle-pwd" onclick="fnTogglePassword()">
                                 <i class="fa-solid fa-eye" id="eye-icon"></i>
                             </button>
@@ -385,15 +385,22 @@
 
                 <!-- Filtro Fechas -->
                 <div class="flt-bar">
+                    <!-- FILTRO DESDE -->
                     <div class="flt-bar-desde">
                         <label>Desde:</label>
                         <input class="frm-inp" id="rep-fdesde" onchange="fnValFechas(); fnActReportes();" type="date"/>
                     </div>
 
+                    <!-- FILTRO HASTA -->
                     <div class="flt-bar-hasta">
                         <label>Hasta:</label>
                         <input class="frm-inp" id="rep-fhasta" onchange="fnValFechas(); fnActReportes();" type="date"/>
                     </div>
+
+                    <!-- BOTÓN HOY -->
+                    <button class="btn-sec" onclick="fnFiltrarHoyReportes()" style="background-color: var(--c-teal) !important;">
+                        <i class="fa-solid fa-calendar-day"></i> Hoy
+                    </button>
                 </div>
 
                 <!-- KPI Cards -->
@@ -479,7 +486,7 @@
                     <div class="chart-box">
                         <div class="chart-header">
                             <h3 class="chart-title">
-                                <i class="fa-solid fa-list-ol" style="color: var(--c-teal);"></i> Otros platos vendidos
+                                <i class="fa-solid fa-list-ol" style="color: var(--c-teal);"></i> Otros más vendidos
                             </h3>
 
                             <!-- Buscador para Otros Platos Vendidos -->

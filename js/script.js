@@ -1074,6 +1074,14 @@ function fnValFechas() {
   }
 }
 
+// Función para filtrar los reportes al día actual
+function fnFiltrarHoyReportes() {
+  const hoy = fnObtenerFechaLocal();
+  document.getElementById('rep-fdesde').value = hoy;
+  document.getElementById('rep-fhasta').value = hoy;
+  fnActReportes();
+}
+
 function parsearFechaPeru(strFecha) {
   if (!strFecha) return null;
   const partes = strFecha.split(' ');
