@@ -41,6 +41,7 @@ function fnCarData() {
 
 function fnGuaData() {
   localStorage.setItem(KEY_DAT, JSON.stringify(AppData));
+  fnActuEspacioSidebar(); // Actualiza el sidebar al guardar cualquier cambio
 }
 
 /* ========== UTILIDADES FECHA DE SISTEMA (dd/mm/yyyy hh:mm am/pm) ========== */
@@ -1234,37 +1235,56 @@ function fnRenTopPlatos(ventasFiltradas) {
   });
 
   // Del 4° lugar hacia abajo (Otros platos vendidos)
-  const otrosPlatos = ranking.slice(3);
-  if (!otrosPlatos.length) {
-    tbOtros.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:16px; color:var(--txt-muted);">No hay más platos fuera del Top 3.</td></tr>`;
-  } else {
-    // Paginación para "Otros platos vendidos" (Mínimo 7 registros por página)
-    const totalPagOtros = Math.ceil(otrosPlatos.length / registrosPorPaginaOtrosPlatos) || 1;
-    if (pagRepOtros > totalPagOtros) pagRepOtros = totalPagOtros;
-    const start = (pagRepOtros - 1) * registrosPorPaginaOtrosPlatos;
-    const pageOtros = otrosPlatos.slice(start, start + registrosPorPaginaOtrosPlatos);
+  const qOtros = fnLimpiarStr(document.getElementById('srch-rep-otros') ? document.getElementById('srch-rep-otros').value : '');
+  
+  const todosOtros = ranking.slice(3);
+  
+  // Mapeamos cada plato conservando su posición real en el ranking general
+  const todosOtrosConPosicion = todosOtros.map((plato, index) => ({
+    ...plato,
+    posicionReal: index + 4
+  }));
 
-    pageOtros.forEach((plato, idx) => {
-      const posicion = start + idx + 4;
-      const tr = document.createElement('tr');
-      tr.className = 'tr-fade';
-      tr.innerHTML = `
-        <td><strong>#${posicion}</strong></td>
-        <td style="text-align: left; text-transform: uppercase;"><strong>${plato.nom}</strong></td>
-        <td><span style="background:#e0f2fe; color:var(--c-teal); padding:3px 10px; border-radius:12px; font-weight:700;">${plato.cant}</span></td>
-        <td style="font-weight:700; color:var(--c-teal);">S/ ${plato.total.toFixed(2)}</td>
-      `;
-      tbOtros.appendChild(tr);
-    });
+  const otrosFiltrados = todosOtrosConPosicion.filter(plato => {
+    if (!qOtros) return true;
+    const matchNum = String(plato.posicionReal).includes(qOtros);
+    const matchDesc = fnLimpiarStr(plato.nom).includes(qOtros);
+    return matchNum || matchDesc;
+  });
 
-    // Renderizar botones de paginación si supera los 7 registros o 1 página
-    if (totalPagOtros > 1 && pagBoxOtros) {
-      fnRenderPaginacionGenerica(pagBoxOtros, pagRepOtros, totalPagOtros, (nuevaPag) => {
-        pagRepOtros = nuevaPag;
-        fnRenTopPlatos(ventasFiltradas);
-      });
-    }
+  if (!otrosFiltrados.length) {
+    tbOtros.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:16px; color:var(--txt-muted);">No se encontraron registros con esa búsqueda.</td></tr>`;
+    return;
   }
+
+  const totalPagOtros = Math.ceil(otrosFiltrados.length / registrosPorPaginaOtrosPlatos) || 1;
+  if (pagRepOtros > totalPagOtros) pagRepOtros = totalPagOtros;
+  const start = (pagRepOtros - 1) * registrosPorPaginaOtrosPlatos;
+  const pageOtros = otrosFiltrados.slice(start, start + registrosPorPaginaOtrosPlatos);
+
+  pageOtros.forEach((plato) => {
+    const tr = document.createElement('tr');
+    tr.className = 'tr-fade';
+    tr.innerHTML = `
+      <td><strong>#${plato.posicionReal}</strong></td>
+      <td style="text-align: left; text-transform: uppercase;"><strong>${plato.nom}</strong></td>
+      <td><span style="background:#e0f2fe; color:var(--c-teal); padding:3px 10px; border-radius:12px; font-weight:700;">${plato.cant}</span></td>
+      <td style="font-weight:700; color:var(--c-teal);">S/ ${plato.total.toFixed(2)}</td>
+    `;
+    tbOtros.appendChild(tr);
+  });
+
+  if (totalPagOtros > 1 && pagBoxOtros) {
+    fnRenderPaginacionGenerica(pagBoxOtros, pagRepOtros, totalPagOtros, (nuevaPag) => {
+      pagRepOtros = nuevaPag;
+      fnRenTopPlatos(ventasFiltradas);
+    });
+  }
+}
+
+function fnFltRepOtros() {
+  pagRepOtros = 1;
+  fnActReportes();
 }
 
 // Función auxiliar para renderizar la barra de paginación
@@ -1340,6 +1360,11 @@ function fnRenChartLineal(ventasDia, gastosDia) {
 
   const dataVentas = fechasUnicas.map(f => ventasDia[f] || 0);
   const dataGastos = fechasUnicas.map(f => gastosDia[f] || 0);
+  
+  // Cálculo de la ganancia diaria por fecha (Ventas - Gastos)
+  const dataGanancia = fechasUnicas.map((f, idx) => {
+    return (dataVentas[idx] - dataGastos[idx]);
+  });
 
   chTendencia = new Chart(ctx, {
     type: 'bar',
@@ -1351,21 +1376,25 @@ function fnRenChartLineal(ventasDia, gastosDia) {
           label: 'Ventas (S/)',
           data: dataVentas.length ? dataVentas : [0],
           borderColor: '#0083a0',
-          backgroundColor: 'rgba(0, 131, 160, 0.5)',
-          fill: true,
-          tension: 0.3,
+          backgroundColor: 'rgba(0, 131, 160, 0.2)',
           borderWidth: 2.5,
-          pointRadius: 4
+          fill: true // <--- Agregado para habilitar el relleno
         },
         {
           label: 'Gastos (S/)',
           data: dataGastos.length ? dataGastos : [0],
           borderColor: '#ed1c24',
-          backgroundColor: 'rgba(237, 28, 36, 0.5)',
-          fill: true,
-          tension: 0.3,
+          backgroundColor: 'rgba(237, 28, 36, 0.2)',
           borderWidth: 2.5,
-          pointRadius: 4
+          fill: true // <--- Agregado para habilitar el relleno
+        },
+        {
+          label: 'Ganancia (S/)',
+          data: dataGanancia.length ? dataGanancia : [0],
+          borderColor: '#16a34a',
+          backgroundColor: 'rgba(22, 163, 74, 0.2)',
+          borderWidth: 2.5,
+          fill: true // <--- Agregado para habilitar el relleno
         }
       ]
     },
@@ -1380,7 +1409,6 @@ function fnRenChartLineal(ventasDia, gastosDia) {
       },
       scales: { y: { beginAtZero: true } }
     }
-    
   });
 
   const legendContainer = document.getElementById('ch-legend-container');
@@ -1394,6 +1422,11 @@ function fnRenChartLineal(ventasDia, gastosDia) {
       <div class="chart-legend-item">
         <span class="chart-legend-box" style="background-color: rgba(237, 28, 36, 0.2); border: 2px solid #ed1c24;"></span>
         <span>Gastos (S/)</span>
+      </div>
+
+      <div class="chart-legend-item">
+        <span class="chart-legend-box" style="background-color: rgba(22, 163, 74, 0.2); border: 2px solid #16a34a;"></span>
+        <span>Ganancia (S/)</span>
       </div>
     `;
   }
@@ -1800,6 +1833,7 @@ function fnRenCategoriasCarta() {
 /* ========== INICIALIZACIÓN GLOBAL ========== */
 window.addEventListener('DOMContentLoaded', () => {
   fnCarData();
+  fnActuEspacioSidebar(); // Carga inicial del estado del almacenamiento
   fnIniReloj();
   fnRenInsumos();
   fnRenCategoriasCarta();
@@ -1998,6 +2032,40 @@ function fnOpModAlmacenamiento() {
   }
 
   fnOpMod('mod-almacenamiento');
+}
+
+/* ========== CÁLCULO DE ESPACIO EN SIDEBAR ========== */
+function fnActuEspacioSidebar() {
+  const elUsado = document.getElementById('sbar-alm-usado');
+  const elPorcentaje = document.getElementById('sbar-alm-porcentaje');
+  const elBarFill = document.getElementById('sbar-alm-bar-fill');
+
+  if (!elUsado || !elPorcentaje || !elBarFill) return;
+
+  const dataStr = localStorage.getItem(KEY_DAT) || JSON.stringify(AppData);
+  const bytesUsados = new Blob([dataStr]).size;
+  const kbUsados = (bytesUsados / 1024).toFixed(1);
+  const bytesTotales = 5242880; // 5 MB
+
+  let porcentajeUsado = (bytesUsados / bytesTotales) * 100;
+  if (bytesUsados > 0 && porcentajeUsado < 1) {
+    porcentajeUsado = 1;
+  }
+
+  elUsado.innerText = `${kbUsados} KB`;
+  elPorcentaje.innerText = `${porcentajeUsado.toFixed(1)}%`;
+  elBarFill.style.width = `${Math.min(100, porcentajeUsado)}%`;
+
+  if (porcentajeUsado > 85) {
+    elBarFill.style.backgroundColor = 'var(--c-red)';
+    elPorcentaje.style.color = 'var(--c-red)';
+  } else if (porcentajeUsado > 60) {
+    elBarFill.style.backgroundColor = 'var(--c-orange)';
+    elPorcentaje.style.color = 'var(--c-orange)';
+  } else {
+    elBarFill.style.backgroundColor = 'var(--c-teal)';
+    elPorcentaje.style.color = 'var(--c-teal)';
+  }
 }
 
 function fnMostrarModalInfo(titulo, mensaje, icono = 'fa-circle-info', color = 'var(--c-teal)') {

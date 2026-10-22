@@ -161,6 +161,25 @@
                     </button>
                 </li>
             </ul>
+
+            <!-- WIDGET DE ESPACIO USADO EN SIDEBAR -->
+            <div class="sbar-storage-box">
+                <div class="sbar-storage-header">
+                    <span class="sbar-storage-title">
+                        <i class="fa-solid fa-hard-drive"></i> Espacio Usado
+                    </span>
+                    <span id="sbar-alm-porcentaje" class="sbar-storage-percent">0%</span>
+                </div>
+
+                <div class="sbar-storage-bar-bg">
+                    <div id="sbar-alm-bar-fill" class="sbar-storage-bar-fill"></div>
+                </div>
+
+                <div class="sbar-storage-footer">
+                    <span id="sbar-alm-usado">0 KB</span>
+                    <span id="sbar-alm-max">5 MB</span>
+                </div>
+            </div>
         </aside>
 
         <!-- ==================== 4. CONTENIDO PRINCIPAL ==================== -->
@@ -447,7 +466,7 @@
                     <div class="chart-box" style="margin-bottom: 20px;">
                         <div class="chart-header">
                             <h3 class="chart-title">
-                                <i class="fa-solid fa-trophy" style="color: #f7931e;"></i> Platos más vendidos
+                                <i class="fa-solid fa-trophy" style="color: #f7931e;"></i> Los más vendidos
                             </h3>
                         </div>
 
@@ -462,10 +481,16 @@
                             <h3 class="chart-title">
                                 <i class="fa-solid fa-list-ol" style="color: var(--c-teal);"></i> Otros platos vendidos
                             </h3>
+
+                            <!-- Buscador para Otros Platos Vendidos -->
+                            <div class="srch-box" style="margin-bottom: 0; max-width: 220px;">
+                                <i class="fa-solid fa-magnifying-glass"></i>
+                                <input class="srch-inp" id="srch-rep-otros" onkeyup="fnFltRepOtros()" placeholder="Buscar registro..." type="text"/>
+                            </div>
                         </div>
 
                         <div class="tbl-box">
-                            <table class="tbl-std">
+                            <table class="tbl-std" style="overflow: hidden;">
                                 <thead>
                                     <tr>
                                         <th>N°</th>
