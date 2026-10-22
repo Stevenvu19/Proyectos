@@ -312,9 +312,7 @@
                         <div>
                             <select class="srch-inp" id="flt-mpago" onchange="fnFltVtas()">
                                 <option value="TODOS">Métodos de Pago</option>
-                                <option value="Efectivo">Efectivo</option>
-                                <option value="Virtual">Virtual (Yape/Plin)</option>
-                                <option value="Mixto">Mixto (Efectivo + Virtual)</option>
+                                <!-- Las opciones se agregarán aquí -->
                             </select>
                         </div>
                     </div>
@@ -1086,11 +1084,11 @@
 
                     <!-- Botones alineados horizontalmente al costado -->
                     <div style="display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;">
-                        <button class="btn-prm" onclick="fnGuardarRegistroAccion()">
+                        <button class="btn-prm" id="btn-guardar-registro" onclick="fnGuardarRegistroAccion()">
                             <i class="fa-solid fa-floppy-disk"></i> Guardar Registro
                         </button>
 
-                        <button class="btn-dng" onclick="fnReiniciarRegistroAccion()">
+                        <button class="btn-dng" id="btn-eliminar-registro" onclick="fnReiniciarRegistroAccion()">
                             <i class="fa-solid fa-rotate-left"></i> Eliminar Registro
                         </button>
 
@@ -1257,8 +1255,8 @@
         </footer>
 
         <!-- BURBUJAS QUE APARECEN EN TODA LA PÁGINA -->
-        <!-- <canvas id="spring-canvas"></canvas>
-        <script src="js/burbujas.js"></script> -->
+        <canvas id="spring-canvas"></canvas>
+        <script src="js/burbujas.js"></script>
 
         <!-- ==================== 8. LÓGICA JAVASCRIPT ==================== -->
         <script src="js/cartas.js"></script>

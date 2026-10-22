@@ -813,6 +813,8 @@ function fnConfCobro() {
 
 /* ========== 4. VISTA VENTAS ========== */
 function fnRenVentas() {
+  fnActualizarFiltroMetodosPago(); // Actualiza dinámicamente el selector según las ventas
+
   const q = fnLimpiarStr(document.getElementById('srch-vta').value);
   const mp = document.getElementById('flt-mpago').value;
   const tb = document.getElementById('tb-vtas');
@@ -823,7 +825,7 @@ function fnRenVentas() {
     const matchTxt = fnLimpiarStr(v.id).includes(q) || fnLimpiarStr(v.cli).includes(q);
     return matchMp && matchTxt;
   });
-
+  
   let sumaVentas = 0;
 
   if (!list.length) {
@@ -871,6 +873,32 @@ function fnRenVentas() {
     pagVentas = nuevaPag;
     fnRenVentas();
   });
+}
+
+function fnActualizarFiltroMetodosPago() {
+  const selectMp = document.getElementById('flt-mpago');
+  if (!selectMp) return;
+
+  const valorActual = selectMp.value;
+  // Extrae métodos de pago únicos de las ventas registradas y los ordena alfabéticamente
+  const metodosUnicos = [...new Set(AppData.ventas.map(v => v.mpago))].sort((a, b) =>
+    a.localeCompare(b, 'es', { sensitivity: 'base' })
+  );
+
+  selectMp.innerHTML = `<option value="TODOS">Métodos de Pago</option>`;
+  metodosUnicos.forEach(mp => {
+    const option = document.createElement('option');
+    option.value = mp;
+    option.innerText = mp;
+    selectMp.appendChild(option);
+  });
+
+  // Mantiene la selección actual si aún existe, de lo contrario vuelve a "TODOS"
+  if ([...selectMp.options].some(opt => opt.value === valorActual)) {
+    selectMp.value = valorActual;
+  } else {
+    selectMp.value = 'TODOS';
+  }
 }
 
 // Generador visual de los botones de paginación para tablas
@@ -1314,7 +1342,7 @@ function fnRenChartLineal(ventasDia, gastosDia) {
   const dataGastos = fechasUnicas.map(f => gastosDia[f] || 0);
 
   chTendencia = new Chart(ctx, {
-    type: 'line',
+    type: 'bar',
     data: {
       labels: fechasUnicas.length ? fechasUnicas : ['Sin datos'],
       
@@ -1323,7 +1351,7 @@ function fnRenChartLineal(ventasDia, gastosDia) {
           label: 'Ventas (S/)',
           data: dataVentas.length ? dataVentas : [0],
           borderColor: '#0083a0',
-          backgroundColor: 'rgba(0, 131, 160, 0.1)',
+          backgroundColor: 'rgba(0, 131, 160, 0.5)',
           fill: true,
           tension: 0.3,
           borderWidth: 2.5,
@@ -1333,7 +1361,7 @@ function fnRenChartLineal(ventasDia, gastosDia) {
           label: 'Gastos (S/)',
           data: dataGastos.length ? dataGastos : [0],
           borderColor: '#ed1c24',
-          backgroundColor: 'rgba(237, 28, 36, 0.1)',
+          backgroundColor: 'rgba(237, 28, 36, 0.5)',
           fill: true,
           tension: 0.3,
           borderWidth: 2.5,
@@ -1943,9 +1971,31 @@ function fnOpModAlmacenamiento() {
     }
   }
 
-  document.getElementById('alm-tot-ing').innerText = AppData.insumos.length;
-  document.getElementById('alm-tot-ped').innerText = AppData.pedidos.length;
-  document.getElementById('alm-tot-vta').innerText = AppData.ventas.length;
+  const totIng = AppData.insumos.length;
+  const totPed = AppData.pedidos.length;
+  const totVta = AppData.ventas.length;
+
+  document.getElementById('alm-tot-ing').innerText = totIng;
+  document.getElementById('alm-tot-ped').innerText = totPed;
+  document.getElementById('alm-tot-vta').innerText = totVta;
+
+  // Validar si existen registros en cualquiera de las 3 vistas
+  const hayRegistros = (totIng > 0 || totPed > 0 || totVta > 0);
+
+  const btnGuardar = document.getElementById('btn-guardar-registro');
+  const btnEliminar = document.getElementById('btn-eliminar-registro');
+
+  if (btnGuardar) {
+    btnGuardar.disabled = !hayRegistros;
+    btnGuardar.style.opacity = hayRegistros ? '1' : '0.4';
+    btnGuardar.style.cursor = hayRegistros ? 'pointer' : 'not-allowed';
+  }
+
+  if (btnEliminar) {
+    btnEliminar.disabled = !hayRegistros;
+    btnEliminar.style.opacity = hayRegistros ? '1' : '0.4';
+    btnEliminar.style.cursor = hayRegistros ? 'pointer' : 'not-allowed';
+  }
 
   fnOpMod('mod-almacenamiento');
 }
@@ -2078,8 +2128,22 @@ function fnProcesarCargarBackup(e) {
   const reader = new FileReader();
   reader.onload = function(evt) {
     try {
+      // Intentamos parsear el contenido del archivo JSON
       const dataCargada = JSON.parse(evt.target.result);
-      if (dataCargada.insumos && dataCargada.pedidos && dataCargada.ventas) {
+
+      // Validamos que la estructura contenga los módulos requeridos del sistema
+      if (dataCargada && typeof dataCargada === 'object' && Array.isArray(dataCargada.insumos) && Array.isArray(dataCargada.pedidos) && Array.isArray(dataCargada.ventas)) {
+        
+        // Validar si el archivo JSON está completamente vacío de registros
+        const totalRegistros = dataCargada.insumos.length + dataCargada.pedidos.length + dataCargada.ventas.length;
+        
+        if (totalRegistros === 0) {
+          fnClMod('mod-almacenamiento');
+          fnMostrarModalInfo('Archivo Vacío', 'El archivo JSON no contiene ningún registro en el sistema, por lo que no se ha cargado ningún backup.', 'fa-triangle-exclamation', 'var(--c-orange)');
+          return;
+        }
+
+        // Si la estructura es válida y contiene registros, se cargan los datos al sistema
         AppData = dataCargada;
         fnGuaData();
 
@@ -2091,12 +2155,19 @@ function fnProcesarCargarBackup(e) {
 
         fnClMod('mod-almacenamiento');
         fnMostrarModalInfo('Carga Exitosa', `Se cargó correctamente los registros desde el archivo <strong>${file.name}</strong>.`, 'fa-circle-check', '#16a34a');
+      
       } else {
-        fnMostrarModalInfo('Archivo Inválido', 'El archivo seleccionado no tiene una estructura válida de backup de AidaMar.', 'fa-triangle-exclamation', 'var(--c-red)');
+        // Si el JSON no tiene la estructura correcta de AidaMar
+        fnClMod('mod-almacenamiento');
+        fnMostrarModalInfo('Archivo Inválido', 'El archivo seleccionado no tiene una estructura válida de backup.', 'fa-triangle-exclamation', 'var(--c-red)');
       }
+
     } catch (err) {
+      // Si ocurre un error de sintaxis en el JSON
+      fnClMod('mod-almacenamiento');
       fnMostrarModalInfo('Error al Leer', 'Ocurrió un error al procesar el archivo JSON.', 'fa-triangle-exclamation', 'var(--c-red)');
     }
   };
+  
   reader.readAsText(file);
 }
